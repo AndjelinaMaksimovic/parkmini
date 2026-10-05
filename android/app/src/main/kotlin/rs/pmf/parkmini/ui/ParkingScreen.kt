@@ -1,12 +1,15 @@
 package rs.pmf.parkmini.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -14,47 +17,53 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import rs.pmf.parkmini.data.SpotStatus
-import rs.pmf.parkmini.data.toStats
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParkingScreen() {
-    // State: when it changes, Compose redraws everything that uses it.
-    var spots by remember { mutableStateOf(fakeSpots()) }
+fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { TopAppBar(title = { Text("ParkMini") }) }) { padding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier.padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                StatsHeader(spots.toStats(), isOffline = false, driver = "you")
-            }
-            for ((zone, zoneSpots) in spots.groupBy { it.zone }) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text("Zone $zone", style = MaterialTheme.typography.titleMedium)
-                }
-                items(zoneSpots, key = { it.id }) { spot ->
-                    SpotTile(
-                        spot = spot,
-                        isMine = false,
-                        enabled = true,
-                        // Only for practice: a click moves the spot to the next status, locally.
-                        onClick = { spots = spots.map { if (it.id == spot.id) it.copy(status = spot.status.next()) else it } },
-                    )
-                }
+        Box(Modifier.padding(padding).fillMaxSize()) {
+            // when over a sealed type: the compiler checks that we handled every state.
+            when (val s = state) {
+                ParkingUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                is ParkingUiState.Error -> Text(
+                    text = s.message,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                )
+                is ParkingUiState.Content -> ParkingContent(s, viewModel.driver)
             }
         }
     }
 }
 
-private fun SpotStatus.next() = SpotStatus.entries[(ordinal + 1) % SpotStatus.entries.size]
+@Composable
+private fun ParkingContent(content: ParkingUiState.Content, driver: String) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            StatsHeader(content.stats, content.isOffline, driver)
+        }
+        for ((zone, zoneSpots) in content.spots.groupBy { it.zone }) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text("Zone $zone", style = MaterialTheme.typography.titleMedium)
+            }
+            items(zoneSpots, key = { it.id }) { spot ->
+                // Actions (reservation) come in class 6.
+                SpotTile(spot = spot, isMine = spot.reservedBy == driver, onClick = {})
+            }
+        }
+    }
+}
