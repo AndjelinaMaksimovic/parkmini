@@ -13,6 +13,10 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import com.v1.parkmini.models.DriverRequest
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.receive
+import io.ktor.server.routing.post
 
 
 // Task 3
@@ -22,6 +26,8 @@ fun main() {
     // starting a server inside our project
     embeddedServer(Netty, port = 8080) {
         install(ContentNegotiation) { json() } // no handwriting of JSON
+
+        launchSensorSimulator(repository)      // Task 5: the sensors work in the background
 
         routing {
             get("/") { call.respondText("ParkMini API works.") }
@@ -66,6 +72,33 @@ fun main() {
                     call.respond(spot)
                 }
             }
+
+            post("/api/spots/{id}/reserve") {
+                call.handleAction { id, driver -> repository.reserve(id, driver) }
+            }
+
+            post("/api/spots/{id}/confirm") {
+                call.handleAction { id, driver -> repository.confirmArrival(id, driver) }
+            }
+
+            post("/api/spots/{id}/release") {
+                call.handleAction { id, driver -> repository.release(id, driver) }
+            }
         }
     }.start(wait = true) // stay and listen
+}
+
+/** Shared part of all three POST routes: read the id and the driver, run the action, send the answer. */
+private suspend fun ApplicationCall.handleAction(action: (id: Int, driver: String) -> ActionResult) {
+    val id = parameters["id"]?.toIntOrNull()
+        ?: return respondText("Invalid id", status = HttpStatusCode.BadRequest)
+    val request = receive<DriverRequest>()
+    respondResult(action(id, request.driver))
+}
+
+/** when over a sealed type: the compiler checks that we handled every outcome. */
+private suspend fun ApplicationCall.respondResult(result: ActionResult) = when (result) {
+    is ActionResult.Success -> respond(result.spot)
+    is ActionResult.NotFound -> respondText("Spot ${result.id} does not exist", status = HttpStatusCode.NotFound)
+    is ActionResult.Conflict -> respondText(result.reason, status = HttpStatusCode.Conflict)
 }
