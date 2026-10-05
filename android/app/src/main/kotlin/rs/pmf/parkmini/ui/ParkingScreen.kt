@@ -13,25 +13,40 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import rs.pmf.parkmini.data.ParkingSpot
+import rs.pmf.parkmini.data.SpotStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("ParkMini") }) }) { padding ->
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
+    }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("ParkMini") }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
-            // when over a sealed type: the compiler checks that we handled every state.
             when (val s = state) {
                 ParkingUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 is ParkingUiState.Error -> Text(
@@ -39,14 +54,33 @@ fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )
-                is ParkingUiState.Content -> ParkingContent(s, viewModel.driver)
+                is ParkingUiState.Content -> ParkingContent(
+                    content = s,
+                    driver = viewModel.driver,
+                    onReserve = viewModel::reserve,
+                    onConfirm = viewModel::confirmArrival,
+                    onRelease = viewModel::release,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ParkingContent(content: ParkingUiState.Content, driver: String) {
+private fun ParkingContent(
+    content: ParkingUiState.Content,
+    driver: String,
+    onReserve: (ParkingSpot) -> Unit,
+    onConfirm: (ParkingSpot) -> Unit,
+    onRelease: (ParkingSpot) -> Unit,
+) {
+    // We remember only the id, so the dialog always shows the freshest state of the spot.
+    var selectedId by remember { mutableStateOf<Int?>(null) }
+    // The sensors can change a spot while the dialog is open. If the spot is no longer free (and is not ours),
+    // there is nothing to offer, so the dialog disappears.
+    val selected = content.spots.firstOrNull { it.id == selectedId }
+        ?.takeIf { it.status == SpotStatus.FREE || it.reservedBy == driver }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         contentPadding = PaddingValues(16.dp),
@@ -61,9 +95,23 @@ private fun ParkingContent(content: ParkingUiState.Content, driver: String) {
                 Text("Zone $zone", style = MaterialTheme.typography.titleMedium)
             }
             items(zoneSpots, key = { it.id }) { spot ->
-                // Actions (reservation) come in class 6.
-                SpotTile(spot = spot, isMine = spot.reservedBy == driver, onClick = {})
+                SpotTile(
+                    spot = spot,
+                    isMine = spot.reservedBy == driver,
+                    onClick = { selectedId = spot.id },
+                )
             }
         }
+    }
+
+    selected?.let { spot ->
+        SpotDialog(
+            spot = spot,
+            isMine = spot.reservedBy == driver,
+            onReserve = { onReserve(spot) },
+            onConfirm = { onConfirm(spot) },
+            onRelease = { onRelease(spot) },
+            onDismiss = { selectedId = null },
+        )
     }
 }
