@@ -8,10 +8,10 @@ Rad se odvija u **dva IntelliJ prozora**:
 
 | Prozor | Folder koji otvaraš (`File → Open`) | Šta radiš |
 |---|---|---|
-| 1 | `parkmini-rest/backend` | Časovi 1 do 3 (server) |
-| 2 | `parkmini-rest/android` | Časovi 4 do 6 (aplikacija) |
+| 1 | `parkmini/backend` | Časovi 1 do 3 (server) |
+| 2 | `parkmini/android` | Časovi 4 do 6 (aplikacija) |
 
-Ne otvaraj koren `parkmini-rest/` kao jedan projekat: to su dva nezavisna Gradle projekta.
+Ne otvaraj koren `parkmini/` kao jedan projekat: to su dva nezavisna Gradle projekta.
 
 ---
 
@@ -37,26 +37,25 @@ Kako pokrećeš emulator iz IntelliJ-a: **View → Tool Windows → Device Manag
 2. **JDK 21**: `File → Project Structure → SDKs → + → Download JDK → Eclipse Temurin 21`.
 3. **Android SDK**: `Settings → Languages & Frameworks → Android SDK` → SDK Platform *Android 16 (API 36)* i *Build-Tools*.
 4. **Emulator ili telefon.** Emulator: `Device Manager → Create Virtual Device → Pixel`, slika *Google APIs, API 36* (ARM 64 na Apple Silicon, x86_64 na Windows/Intel). Na **Windows-u** emulator traži uključen *Windows Hypervisor Platform* i virtuelizaciju u BIOS-u, pa je USB telefon često lakši.
-5. **Preuzmi projekat** i prebaci na početni tag:
+5. **Preuzmi projekat:**
 
 ```bash
-git clone <adresa repozitorijuma> parkmini-rest
-cd parkmini-rest
-git checkout cas0-start
+git clone <adresa repozitorijuma> parkmini
+cd parkmini
 ```
 
-6. **Proveri backend:** otvori `parkmini-rest/backend`, u `Settings → Build Tools → Gradle → Gradle JVM` izaberi JDK 21, sačekaj sync, pokreni `hello/Hello.kt` (zeleni trougao pored `main`). Treba da se ispiše `Zdravo, Kotlin! JDK: ...`.
-7. **Proveri Android:** otvori `parkmini-rest/android` u **drugom prozoru**, sačekaj sync, pokreni `app` na emulatoru/telefonu: treba "Zdravo, ParkMini!".
+6. **Proveri backend:** otvori `parkmini/backend`, u `Settings → Build Tools → Gradle → Gradle JVM` izaberi JDK 21, sačekaj sync, pokreni `Application.kt` (zeleni trougao pored `main`). U browseru `http://localhost:8080/` treba da piše `ParkMini API works.`
+7. **Proveri Android:** otvori `parkmini/android` u **drugom prozoru**, sačekaj sync, pokreni `app` na emulatoru/telefonu (backend mora da radi): treba da se vidi lista parking mesta.
 8. **Obavezno kod kuće**: prvi sync skida stotine MB; na fakultetskoj mreži bi pojeo početak časa.
 
 ### Komandna linija (ako IntelliJ pravi problem)
 
 ```bash
-# backend (u folderu parkmini-rest/backend)
+# backend (u folderu parkmini/backend)
 ./gradlew build          # Windows: gradlew.bat build
 ./gradlew run            # server na portu 8080
 
-# android (u folderu parkmini-rest/android): treba ANDROID_HOME ili local.properties sa sdk.dir
+# android (u folderu parkmini/android): treba ANDROID_HOME ili local.properties sa sdk.dir
 ./gradlew assembleDebug
 ```
 
@@ -71,12 +70,12 @@ Server sluša na portu 8080. Prvi put firewall pita da li dozvoljavaš dolazne k
 
 ## 4. Provera pre prvog časa (30 minuta)
 
-- [ ] `git checkout cas0-start`; backend `Hello.kt` ispisuje pozdrav; Android prikazuje "Zdravo, ParkMini!"
-- [ ] `git checkout cas6`: server (`Application.kt`) i `app` na emulatoru: **mesta menjaju boju**
+- [ ] Backend: `Application.kt` se pokreće, `requests.http` zahtevi 1 do 10 prolaze
+- [ ] Android: `app` na emulatoru prikazuje mesta koja **sama menjaju boju** (senzori, preko WebSocket-a)
 - [ ] Rezervacija: klik na slobodno mesto → *Reserve* → mesto je žuto sa oznakom *YOU*; zatim *Confirm arrival* → crveno; zatim *Leave spot* → zeleno
 - [ ] Ugasiš server: baner *No connection*; pokreneš: oporavlja se sam
 - [ ] `localhost:8080/api/spots` u browseru vraća JSON
-- [ ] Postman kolekcija (`ParkMini.postman_collection.json` iz tvog projekta) prolazi
+- [ ] `backend/requests.http` (ili Postman kolekcija `docs/ParkMini.postman_collection.json`) prolazi
 
 ## 5. Poznata ograničenja i rizici
 
