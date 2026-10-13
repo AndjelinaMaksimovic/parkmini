@@ -48,8 +48,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
 
-    // Mreža: Ktor klijent (isti Ktor kao na backendu, samo klijentska strana)
-    implementation("io.ktor:ktor-client-android:$ktorVersion")
+    // Network: Ktor client (the same Ktor as on the backend, only the client side). CIO engine because it supports WebSockets.
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
 }

@@ -6,7 +6,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import rs.pmf.parkmini.data.ParkingSpot
 import rs.pmf.parkmini.data.SpotStatus
+import kotlin.time.Clock
 
+// Task 10 | GIVEN (ready code)
 @Composable
 fun SpotDialog(
     spot: ParkingSpot,
@@ -22,7 +24,7 @@ fun SpotDialog(
     val (title, body) = when (spot.status) {
         SpotStatus.FREE -> "Spot ${spot.label}" to "A reservation is valid for 10 minutes."
         SpotStatus.RESERVED -> {
-            val minutes = ((spot.reservedUntil ?: 0L) - System.currentTimeMillis()) / 60_000 + 1
+            val minutes = ((spot.reservedUntil ?: Clock.System.now()) - Clock.System.now()).inWholeMinutes + 1
             "Your reservation: ${spot.label}" to "Expires in about $minutes min. Confirm when you park."
         }
         else -> "Spot ${spot.label}" to "Are you leaving this parking spot?"

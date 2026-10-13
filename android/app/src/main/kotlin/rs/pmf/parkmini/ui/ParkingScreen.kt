@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import rs.pmf.parkmini.data.ParkingSpot
 import rs.pmf.parkmini.data.SpotStatus
 
+// Task 9 | GIVEN (ready code): what the screen shows for Loading, Error and Content
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
@@ -66,6 +67,7 @@ fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
     }
 }
 
+// Task 7: the grid grouped by zone (typed). Task 8 adds the header and the click, Task 10 adds the dialog.
 @Composable
 private fun ParkingContent(
     content: ParkingUiState.Content,
@@ -74,6 +76,7 @@ private fun ParkingContent(
     onConfirm: (ParkingSpot) -> Unit,
     onRelease: (ParkingSpot) -> Unit,
 ) {
+    // Task 10: which spot is open in the dialog
     // We remember only the id, so the dialog always shows the freshest state of the spot.
     var selectedId by remember { mutableStateOf<Int?>(null) }
     // The sensors can change a spot while the dialog is open. If the spot is no longer free (and is not ours),
@@ -87,6 +90,7 @@ private fun ParkingContent(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // Task 8: the header
         item(span = { GridItemSpan(maxLineSpan) }) {
             StatsHeader(content.stats, content.isOffline, driver)
         }
@@ -104,6 +108,7 @@ private fun ParkingContent(
         }
     }
 
+    // Task 10 | GIVEN (ready code)
     selected?.let { spot ->
         SpotDialog(
             spot = spot,

@@ -2,7 +2,9 @@
 package rs.pmf.parkmini.data
 
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
+// Task 7: typed in class (@Serializable is explained in Task 9, when the data starts to come from the server)
 @Serializable
 enum class SpotStatus { FREE, RESERVED, OCCUPIED, UNAVAILABLE }
 
@@ -13,12 +15,10 @@ data class ParkingSpot(
     val zone: String,
     val status: SpotStatus = SpotStatus.FREE,
     val reservedBy: String? = null,
-    val reservedUntil: Long? = null, // epoch millis
+    val reservedUntil: Instant? = null,
 )
 
-@Serializable
-data class DriverRequest(val driver: String)
-
+// Task 8 | GIVEN (ready code): the same statistics code as on the backend
 @Serializable
 data class Stats(
     val total: Int,
@@ -41,3 +41,7 @@ fun List<ParkingSpot>.toStats(): Stats {
         occupancyPercent = if (isEmpty()) 0 else busy * 100 / size,
     )
 }
+
+// Task 10 | GIVEN (ready code): the body of the reserve / confirm / release requests
+@Serializable
+data class DriverRequest(val driver: String)

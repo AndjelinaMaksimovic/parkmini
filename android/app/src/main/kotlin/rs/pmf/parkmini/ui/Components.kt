@@ -30,6 +30,33 @@ import rs.pmf.parkmini.data.ParkingSpot
 import rs.pmf.parkmini.data.SpotStatus
 import rs.pmf.parkmini.data.Stats
 
+// Task 7: the tile (typed). Task 8 adds onClick, Task 10 adds isMine and enabled.
+@Composable
+fun SpotTile(
+    spot: ParkingSpot,
+    isMine: Boolean,
+    onClick: () -> Unit,
+    enabled: Boolean = spot.status == SpotStatus.FREE || isMine,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = spot.status.color),
+        border = if (isMine) BorderStroke(3.dp, Color.Black) else null,
+        modifier = Modifier
+            .aspectRatio(1f)
+            .clickable(enabled = enabled && spot.status != SpotStatus.UNAVAILABLE, onClick = onClick),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(spot.label, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(if (isMine) "YOU" else spot.status.title, color = Color.White, fontSize = 12.sp)
+        }
+    }
+}
+
+// Task 8 | GIVEN (ready code) (isOffline is used in Task 9, driver in Task 10)
 @Composable
 fun StatsHeader(stats: Stats, isOffline: Boolean, driver: String) {
     Card(Modifier.fillMaxWidth()) {
@@ -58,31 +85,8 @@ private fun Legend() {
     }
 }
 
-@Composable
-fun SpotTile(
-    spot: ParkingSpot,
-    isMine: Boolean,
-    onClick: () -> Unit,
-    enabled: Boolean = spot.status == SpotStatus.FREE || isMine,
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = spot.status.color),
-        border = if (isMine) BorderStroke(3.dp, Color.Black) else null,
-        modifier = Modifier
-            .aspectRatio(1f)
-            .clickable(enabled = enabled && spot.status != SpotStatus.UNAVAILABLE, onClick = onClick),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(spot.label, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text(if (isMine) "YOU" else spot.status.title, color = Color.White, fontSize = 12.sp)
-        }
-    }
-}
 
+// Optional | GIVEN (ready code)
 // ---- Preview: see the component without running an emulator ----
 
 @Preview(showBackground = true)

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import rs.pmf.parkmini.data.SpotStatus
 
+// Task 7 | GIVEN (ready code)
 @Composable
 fun ParkMiniTheme(content: @Composable () -> Unit) {
     MaterialTheme(
@@ -14,6 +15,7 @@ fun ParkMiniTheme(content: @Composable () -> Unit) {
     )
 }
 
+// Task 7 | GIVEN (ready code)
 // Extension properties: we add behaviour to a class we did not write, without inheritance.
 val SpotStatus.color: Color
     get() = when (this) {
