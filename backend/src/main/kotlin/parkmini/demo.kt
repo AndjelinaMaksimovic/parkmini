@@ -7,18 +7,23 @@ import com.v1.parkmini.models.sampleSpots
 import com.v1.parkmini.models.toStats
 
 // trying out the model
-fun main(){
-    // Task 1 test
+fun main() {
+    task1()
+    task2()
+}
+
+private fun task1() {
     println("\n-------------- TASK 1 --------------")
     val spot = ParkingSpot(id = 1, label = "A1", zone = Zone.A)
-    println(spot)
-
     val reserved = spot.copy(status = SpotStatus.RESERVED, reservedBy = "ana")
-    println(reserved)
+
+    println("original: $spot")
+    println("copy:     $reserved")
     println(SpotStatus.entries)   // all values of enum SpotStatus
+}
 
 
-    // Task 2 test
+private fun task2() {
     println("\n-------------- TASK 2 --------------")
     val spots = sampleSpots()
     println(spots.size)
@@ -26,7 +31,6 @@ fun main(){
     println(spots.last())
     println(spots.count { it.status == SpotStatus.UNAVAILABLE })
 
-    val spots2 = sampleSpots(occupiedShare = 0.4)
-    println(spots2.toStats())
-    println(sampleSpots().toStats())
+    println("statistics, nothing occupied: ${spots.toStats()}")
+    println("statistics, about 40% occupied: ${sampleSpots(occupiedShare = 0.4).toStats()}")
 }

@@ -4,16 +4,15 @@ import com.v1.parkmini.models.enums.SpotStatus
 import com.v1.parkmini.models.enums.Zone
 import kotlin.random.Random
 
-
-/** The parking lot has:
-    - 18 spots
-    - 3 zones (A, B, C)
-    - 6 spots per zone, labeled A1-A6, B1-B6, and C1-C6
-    - spot C6 is unavailable
-When the server starts, about 40% of the spots are already OCCUPIED, picked at random.
-occupiedShare is the percentage of spots OCCUPIED in the beginning (a chance that any other spot starts as OCCUPIED - 0.4 about 40%)
- **/
-fun sampleSpots(occupiedShare: Double = 0.0 ): List<ParkingSpot> {
+/* Task 2:
+* The parking lot has
+*	- 18 spots
+*	- 3 zones (A, B, C)
+*	- 6 spots per zone, labeled A1-A6, B1-B6, and C1-C6
+*	- spot C6 is unavailable
+* When the server starts, about 40% of the other spots are already OCCUPIED, picked at random.
+*/
+fun sampleSpots(occupiedShare: Double = 0.0): List<ParkingSpot> {
     val spots = mutableListOf<ParkingSpot>()
     var id = 1
     for (zone in Zone.entries) {
@@ -30,8 +29,8 @@ fun sampleSpots(occupiedShare: Double = 0.0 ): List<ParkingSpot> {
     return spots
 }
 
-/*If I have enough time show shuffle with take: */
-fun sampleSpots2(occupiedShare: Double = 0.0 ): List<ParkingSpot> {
+// If I have enough time show shuffle with take:
+fun sampleSpots2(occupiedShare: Double = 0.0): List<ParkingSpot> {
     val spots = mutableListOf<ParkingSpot>()
     var id = 1
     for (zone in Zone.entries) {

@@ -75,7 +75,6 @@ fun collections() {
     val free = labels.filter { it !in taken }
     println("Free spots: $free")
 
-    // TODO: Built to groupBy for better explanation
     val perZones = labels.groupBy { it.first() }              // Map<Char, List<String>>
     println(perZones)
     println(perZones.mapValues { (_, mesta) -> mesta.size })

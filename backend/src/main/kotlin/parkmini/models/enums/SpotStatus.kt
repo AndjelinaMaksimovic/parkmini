@@ -2,7 +2,7 @@ package com.v1.parkmini.models.enums
 
 import kotlinx.serialization.Serializable
 
-/** 4 possible statuses**/
+// The 4 possible statuses of a parking spot.
 @Serializable
 enum class SpotStatus {
     FREE,

@@ -3,14 +3,20 @@ package com.v1.parkmini.models
 import com.v1.parkmini.models.enums.SpotStatus
 import kotlinx.serialization.Serializable
 
-/**For any list of spots, we can compute statistics:
-	- the total number of spots
-	- the number of spots in each status
-	- occupancy percentage (reserved + occupied spots as a percentage of all spots)
-**/
+/* Task 2:
+* For any list of spots, we can compute statistics:
+*	- the total number of spots
+*	- the number of spots in each status
+*	- occupancy percentage (reserved + occupied spots as a percentage of all spots)
+*/
 @Serializable
 data class Stats(
-    val total: Int, val free: Int, val reserved: Int, val occupied: Int, val unavailable: Int, val occupancyPercent: Int
+    val total: Int,
+    val free: Int,
+    val reserved: Int,
+    val occupied: Int,
+    val unavailable: Int,
+    val occupancyPercent: Int
 )
 
 // Extension function show of - adding toStats() to an existing class List, without inheritance
@@ -27,7 +33,6 @@ fun List<ParkingSpot>.toStats(): Stats {
     )
 }
 
-//TODO:  step by step groupingBy show off
 /*
 // V1 - "traditional" way
 var free = 0
