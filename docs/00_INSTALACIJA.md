@@ -4,14 +4,15 @@
 
 **Da, sve može u IntelliJ IDEA-i**: backend (Ktor), Postman/HTTP zahtevi i Android (emulator, Logcat, Compose preview). Potreban je **Android plugin** (JetBrains) i **Android SDK**. Android Studio je rezerva (isti IDE).
 
-Rad se odvija u **dva IntelliJ prozora**:
+Ceo projekat je **jedan Gradle projekat** (Kotlin Multiplatform) sa tri modula. Otvaraš **koren `parkmini/`** (`File → Open`), jednom:
 
-| Prozor | Folder koji otvaraš (`File → Open`) | Šta radiš |
+| Modul | Šta je | Časovi |
 |---|---|---|
-| 1 | `parkmini/backend` | Časovi 1 do 3 (server) |
-| 2 | `parkmini/android` | Časovi 4 do 6 (aplikacija) |
+| `shared` | modeli koje koriste i server i aplikacija (`ParkingSpot`, `SpotStatus`...) | 2 (Task 1) |
+| `backend` | Ktor server | 2 i 3 |
+| `android` | Compose aplikacija | 4 do 6 |
 
-Ne otvaraj koren `parkmini/` kao jedan projekat: to su dva nezavisna Gradle projekta.
+Zato je **Android SDK potreban i za časove servera** (Gradle ga traži čim učita projekat): instaliraš ga u domaćem 0.
 
 ---
 
@@ -44,19 +45,16 @@ git clone <adresa repozitorijuma> parkmini
 cd parkmini
 ```
 
-6. **Proveri backend:** otvori `parkmini/backend`, u `Settings → Build Tools → Gradle → Gradle JVM` izaberi JDK 21, sačekaj sync, pokreni `Application.kt` (zeleni trougao pored `main`). U browseru `http://localhost:8080/` treba da piše `ParkMini API works.`
-7. **Proveri Android:** otvori `parkmini/android` u **drugom prozoru**, sačekaj sync, pokreni `app` na emulatoru/telefonu (backend mora da radi): treba da se vidi lista parking mesta.
+6. **Proveri backend:** otvori koren `parkmini` (jedan prozor), u `Settings → Build Tools → Gradle → Gradle JVM` izaberi JDK 21, sačekaj sync, pokreni `Application.kt` (zeleni trougao pored `main`). U browseru `http://localhost:8080/` treba da piše `ParkMini API works.`
+7. **Proveri Android:** u istom prozoru izaberi konfiguraciju **`android`** (gore, pored zelenog trougla) i pokreni je na emulatoru/telefonu (backend mora da radi): treba da se vidi lista parking mesta.
 8. **Obavezno kod kuće**: prvi sync skida stotine MB; na fakultetskoj mreži bi pojeo početak časa.
 
 ### Komandna linija (ako IntelliJ pravi problem)
 
 ```bash
-# backend (u folderu parkmini/backend)
-./gradlew build          # Windows: gradlew.bat build
-./gradlew run            # server na portu 8080
-
-# android (u folderu parkmini/android): treba ANDROID_HOME ili local.properties sa sdk.dir
-./gradlew assembleDebug
+# sve se radi iz korena parkmini/ (treba ANDROID_HOME ili local.properties sa sdk.dir)
+./gradlew :backend:run            # server na portu 8080   (Windows: gradlew.bat :backend:run)
+./gradlew :android:assembleDebug  # aplikacija
 ```
 
 ## 3. Kako se emulator/telefon povezuje sa serverom
@@ -70,12 +68,12 @@ Server sluša na portu 8080. Prvi put firewall pita da li dozvoljavaš dolazne k
 
 ## 4. Provera pre prvog časa (30 minuta)
 
-- [ ] Backend: `Application.kt` se pokreće, `requests.http` zahtevi 1 do 10 prolaze
-- [ ] Android: `app` na emulatoru prikazuje mesta koja **sama menjaju boju** (senzori, preko WebSocket-a)
-- [ ] Rezervacija: klik na slobodno mesto → *Reserve* → mesto je žuto sa oznakom *YOU*; zatim *Confirm arrival* → crveno; zatim *Leave spot* → zeleno
+- [ ] Backend: `Application.kt` se pokreće, `requests.http` zahtevi 1 do 7 prolaze, WebSocket (zahtev 8) šalje listu
+- [ ] Android: `android` na emulatoru prikazuje mesta koja **sama menjaju boju** (senzori, preko WebSocket-a)
+- [ ] Parkiranje: klik na slobodno mesto → unesi tablicu (npr. `KG-123-AB`) → *Park here* → mesto je crveno sa oznakom *YOU*; zatim *Leave spot* → zeleno
+- [ ] Neispravna tablica (npr. `KG-12-AB`): polje je crveno, dugme *Park here* je isključeno
 - [ ] Ugasiš server: baner *No connection*; pokreneš: oporavlja se sam
-- [ ] `localhost:8080/api/spots` u browseru vraća JSON
-- [ ] `backend/requests.http` (ili Postman kolekcija `docs/ParkMini.postman_collection.json`) prolazi
+- [ ] `localhost:8080/` u browseru piše `ParkMini API works.`
 
 ## 5. Poznata ograničenja i rizici
 
@@ -87,3 +85,4 @@ Server sluša na portu 8080. Prvi put firewall pita da li dozvoljavaš dolazne k
 | Emulator je spor ili ne radi | USB telefon; ili neka studenti gledaju tvoj ekran. |
 | Gradle JVM u IntelliJ-u pokazuje na pogrešan JDK | `Settings → Build Tools → Gradle → Gradle JVM`: JDK 17 ili noviji. |
 | Senzori menjaju mesto dok je dijalog otvoren | Rešeno: dijalog se zatvara ako mesto više nije slobodno. |
+| Emulator pokazuje ekran „Try out your stylus“ preko aplikacije | Sistemska funkcija emulatora, ne greška aplikacije: `adb shell settings put secure stylus_handwriting_enabled 0`. |
