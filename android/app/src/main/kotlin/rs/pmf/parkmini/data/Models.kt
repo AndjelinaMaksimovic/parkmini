@@ -14,7 +14,7 @@ data class ParkingSpot(
     val label: String,
     val zone: String,
     val status: SpotStatus = SpotStatus.FREE,
-    val reservedBy: String? = null,
+    val reservedBy: String? = null, // license plate instead
     val reservedUntil: Instant? = null,
 )
 

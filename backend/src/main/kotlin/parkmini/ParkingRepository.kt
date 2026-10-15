@@ -5,7 +5,7 @@ import com.v1.parkmini.models.enums.SpotStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -34,6 +34,8 @@ class ParkingRepository(initial: List<ParkingSpot>) {
 
     @Synchronized
     fun find(id: Int): ParkingSpot? = _spots.value.find { it.id == id }
+
+    val lock = Mutex()
 
     @Synchronized
     fun reserve(id: Int, driver: String): ActionResult {

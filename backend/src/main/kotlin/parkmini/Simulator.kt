@@ -13,4 +13,3 @@ suspend fun sensorSimulator(repository: ParkingRepository): Nothing {
         repository.releaseExpired(Clock.System)
     }
 }
-

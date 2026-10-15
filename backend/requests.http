@@ -99,6 +99,7 @@ Content-Type: application/json
     });
 %}
 
+
 ### 10. Leave the spot
 POST http://localhost:8080/api/spots/{{id}}/release
 Content-Type: application/json
