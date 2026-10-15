@@ -1,10 +1,9 @@
 package com.v1.parkmini
 
-import com.v1.parkmini.models.ParkingSpot
-import com.v1.parkmini.models.enums.SpotStatus
-import com.v1.parkmini.models.enums.Zone
 import com.v1.parkmini.models.sampleSpots
-import com.v1.parkmini.models.toStats
+import com.v1.parkmini.shared.ParkingSpot
+import com.v1.parkmini.shared.SpotStatus
+import com.v1.parkmini.shared.Zone
 
 // trying out the model
 fun main() {
@@ -15,11 +14,10 @@ fun main() {
 private fun task1() {
     println("\n-------------- TASK 1 --------------")
     val spot = ParkingSpot(id = 1, label = "A1", zone = Zone.A)
-    val reserved = spot.copy(status = SpotStatus.RESERVED, reservedBy = "ana")
+    val occupied = spot.copy(status = SpotStatus.Occupied("KG-123-AB"))
 
     println("original: $spot")
-    println("copy:     $reserved")
-    println(SpotStatus.entries)   // all values of enum SpotStatus
+    println("copy:     $occupied")
 }
 
 
@@ -29,8 +27,8 @@ private fun task2() {
     println(spots.size)
     println(spots.map { it.label })
     println(spots.last())
-    println(spots.count { it.status == SpotStatus.UNAVAILABLE })
+    println(spots.count { it.status is SpotStatus.Unavailable })
 
-    println("statistics, nothing occupied: ${spots.toStats()}")
-    println("statistics, about 40% occupied: ${sampleSpots(occupiedShare = 0.4).toStats()}")
+    val busy = sampleSpots(occupiedShare = 0.4)
+    println("about 40% occupied: ${busy.count { it.status is SpotStatus.Occupied }} of ${busy.size}")
 }

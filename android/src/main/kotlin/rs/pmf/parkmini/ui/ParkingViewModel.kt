@@ -13,10 +13,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import rs.pmf.parkmini.data.ApiException
 import rs.pmf.parkmini.data.ParkingApi
-import rs.pmf.parkmini.data.ParkingSpot
-import rs.pmf.parkmini.data.Stats
-import rs.pmf.parkmini.data.toStats
-import kotlin.random.Random
+import com.v1.parkmini.shared.ParkingSpot
+import com.v1.parkmini.shared.Stats
+import com.v1.parkmini.shared.toStats
 import kotlin.time.Duration.Companion.seconds
 
 // Task 9: the UI state (typed)
@@ -32,9 +31,9 @@ sealed interface ParkingUiState {
 
 class ParkingViewModel(private val api: ParkingApi = ParkingApi()) : ViewModel() {
 
-    // Task 10: every installation of the app is a different driver
-    /** Every installation of the app is a different driver. */
-    val driver = "vozac-${Random.nextInt(100, 1000)}"
+    // Task 10: the license plate of the driver who uses this app (empty until the first parking)
+    private val _licensePlate = MutableStateFlow("")
+    val licensePlate: StateFlow<String> = _licensePlate.asStateFlow()
 
     // Task 9
     private val _uiState = MutableStateFlow<ParkingUiState>(ParkingUiState.Loading)
@@ -50,13 +49,12 @@ class ParkingViewModel(private val api: ParkingApi = ParkingApi()) : ViewModel()
         viewModelScope.launch { followServer() }
     }
 
-    // Task 10: reserve and act (typed)
-    fun reserve(spot: ParkingSpot) = act("Reserved spot ${spot.label}") { api.reserve(spot.id, driver) }
+    // Task 10: occupy, release and act (typed)
+    fun occupy(spot: ParkingSpot, licensePlate: String) = act("Parked in spot ${spot.label}") {
+        api.occupy(spot.id, licensePlate).also { _licensePlate.value = licensePlate }
+    }
 
-    // Homework 2 | GIVEN (ready code)
-    fun confirmArrival(spot: ParkingSpot) = act("Arrival confirmed: ${spot.label}") { api.confirm(spot.id, driver) }
-
-    fun release(spot: ParkingSpot) = act("Spot ${spot.label} is free again") { api.release(spot.id, driver) }
+    fun release(spot: ParkingSpot) = act("Spot ${spot.label} is free again") { api.release(spot.id, _licensePlate.value) }
 
     private fun act(successMessage: String, call: suspend () -> ParkingSpot) {
         viewModelScope.launch {

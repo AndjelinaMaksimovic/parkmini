@@ -19,6 +19,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import com.v1.parkmini.shared.LicensePlateRequest
+import com.v1.parkmini.shared.ParkingSpot
 
 // Task 10 | GIVEN (ready code)
 /** An error returned by our backend (e.g. 409: the spot is already taken). */
@@ -46,19 +48,16 @@ class ParkingApi(private val baseUrl: String = BASE_URL, private val wsUrl: Stri
         }
     }
 
-    // Task 10: reserve (typed)
-    suspend fun reserve(id: Int, driver: String): ParkingSpot = postAction(id, "reserve", driver)
+    // Task 10: occupy and release (typed)
+    suspend fun occupy(id: Int, licensePlate: String): ParkingSpot = postAction(id, "occupy", licensePlate)
 
-    // Homework 2 | GIVEN (ready code)
-    suspend fun confirm(id: Int, driver: String): ParkingSpot = postAction(id, "confirm", driver)
-
-    suspend fun release(id: Int, driver: String): ParkingSpot = postAction(id, "release", driver)
+    suspend fun release(id: Int, licensePlate: String): ParkingSpot = postAction(id, "release", licensePlate)
 
     // Task 10 | GIVEN (ready code)
-    private suspend fun postAction(id: Int, action: String, driver: String): ParkingSpot =
+    private suspend fun postAction(id: Int, action: String, licensePlate: String): ParkingSpot =
         client.post("$baseUrl/api/spots/$id/$action") {
             contentType(ContentType.Application.Json)
-            setBody(DriverRequest(driver))
+            setBody(LicensePlateRequest(licensePlate))
         }.parse()
 
     private suspend inline fun <reified T> HttpResponse.parse(): T {

@@ -13,5 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "android"
-include(":app")
+rootProject.name = "parkmini"
+
+// shared: models used by both sides (Kotlin Multiplatform), backend: Ktor server, android: Compose app
+include(":shared", ":backend", ":android")

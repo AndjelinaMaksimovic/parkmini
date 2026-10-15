@@ -29,14 +29,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import rs.pmf.parkmini.data.ParkingSpot
-import rs.pmf.parkmini.data.SpotStatus
+import com.v1.parkmini.shared.ParkingSpot
+import com.v1.parkmini.shared.SpotStatus
 
 // Task 9 | GIVEN (ready code): what the screen shows for Loading, Error and Content
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val licensePlate by viewModel.licensePlate.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -57,9 +58,8 @@ fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
                 )
                 is ParkingUiState.Content -> ParkingContent(
                     content = s,
-                    driver = viewModel.driver,
-                    onReserve = viewModel::reserve,
-                    onConfirm = viewModel::confirmArrival,
+                    licensePlate = licensePlate,
+                    onOccupy = viewModel::occupy,
                     onRelease = viewModel::release,
                 )
             }
@@ -71,9 +71,8 @@ fun ParkingScreen(viewModel: ParkingViewModel = viewModel()) {
 @Composable
 private fun ParkingContent(
     content: ParkingUiState.Content,
-    driver: String,
-    onReserve: (ParkingSpot) -> Unit,
-    onConfirm: (ParkingSpot) -> Unit,
+    licensePlate: String,
+    onOccupy: (ParkingSpot, String) -> Unit,
     onRelease: (ParkingSpot) -> Unit,
 ) {
     // Task 10: which spot is open in the dialog
@@ -82,7 +81,7 @@ private fun ParkingContent(
     // The sensors can change a spot while the dialog is open. If the spot is no longer free (and is not ours),
     // there is nothing to offer, so the dialog disappears.
     val selected = content.spots.firstOrNull { it.id == selectedId }
-        ?.takeIf { it.status == SpotStatus.FREE || it.reservedBy == driver }
+        ?.takeIf { it.status is SpotStatus.Free || it.isOccupiedBy(licensePlate) }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
@@ -92,7 +91,7 @@ private fun ParkingContent(
     ) {
         // Task 8: the header
         item(span = { GridItemSpan(maxLineSpan) }) {
-            StatsHeader(content.stats, content.isOffline, driver)
+            StatsHeader(content.stats, content.isOffline, licensePlate)
         }
         for ((zone, zoneSpots) in content.spots.groupBy { it.zone }) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -101,7 +100,7 @@ private fun ParkingContent(
             items(zoneSpots, key = { it.id }) { spot ->
                 SpotTile(
                     spot = spot,
-                    isMine = spot.reservedBy == driver,
+                    isMine = spot.isOccupiedBy(licensePlate),
                     onClick = { selectedId = spot.id },
                 )
             }
@@ -112,9 +111,9 @@ private fun ParkingContent(
     selected?.let { spot ->
         SpotDialog(
             spot = spot,
-            isMine = spot.reservedBy == driver,
-            onReserve = { onReserve(spot) },
-            onConfirm = { onConfirm(spot) },
+            isMine = spot.isOccupiedBy(licensePlate),
+            savedLicensePlate = licensePlate,
+            onOccupy = { plate -> onOccupy(spot, plate) },
             onRelease = { onRelease(spot) },
             onDismiss = { selectedId = null },
         )

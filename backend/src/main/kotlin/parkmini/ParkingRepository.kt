@@ -1,99 +1,54 @@
 package com.v1.parkmini
 
-import com.v1.parkmini.models.ParkingSpot
-import com.v1.parkmini.models.enums.SpotStatus
+import com.v1.parkmini.models.SIMULATED_PREFIX
+import com.v1.parkmini.models.randomSimulatedPlate
+import com.v1.parkmini.shared.ParkingSpot
+import com.v1.parkmini.shared.SpotStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.sync.Mutex
 import kotlin.random.Random
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Instant
 
 /* Task 4:
 * Start by creating a class ParkingRepository that holds the list of spots.
 * It offers:
-*   - getting all spots
-*   - finding one spot by its id (the result is empty if the spot does not exist)
 *   - a way for other parts of the server to follow the list: whenever a spot changes,
-* they are given the new list
-
-* The routes then ask the repository instead of touching the list directly,
-* and the existing endpoints behave exactly as before.
+*     they are given the new list
 *
-* Then a driver can reserve a free spot. The reservation is valid for 10 minutes.
+* Then a driver can park in a free spot (the spot becomes OCCUPIED by the driver's license plate)
+* and, later, leave the spot (it becomes FREE again). Nobody else can free that spot.
 */
+// SECURITY: this is a simplified example, so these problems are known and left on purpose:
+//  - no authentication: the license plate in the request is trusted, so anyone can send anyone's plate and free that spot;
+//  - every client receives every license plate (personal data);
+//  - the list lives only in memory: when the server restarts, everything is lost (a real system needs a database).
 class ParkingRepository(initial: List<ParkingSpot>) {
 
     private val _spots = MutableStateFlow(initial)
     val spots: StateFlow<List<ParkingSpot>> = _spots.asStateFlow()
 
-    @Synchronized
-    fun all(): List<ParkingSpot> = _spots.value
+    private fun find(id: Int): ParkingSpot? = _spots.value.find { it.id == id }
 
+    // @Synchronized: "check, then change" must not run twice at the same time (two drivers, one spot)
     @Synchronized
-    fun find(id: Int): ParkingSpot? = _spots.value.find { it.id == id }
-
-    val lock = Mutex()
-
-    @Synchronized
-    fun reserve(id: Int, driver: String): ActionResult {
+    fun occupy(id: Int, licensePlate: String): ActionResult {
         val spot = find(id) ?: return ActionResult.NotFound(id)
-        if (spot.status != SpotStatus.FREE) {
-            return ActionResult.Conflict("Spot ${spot.label} is not free (${spot.status})")
+        if (spot.status !is SpotStatus.Free) {
+            return ActionResult.Conflict("Spot ${spot.label} is not free")
         }
-        val reserved = spot.copy(
-            status = SpotStatus.RESERVED,
-            reservedBy = driver,
-            reservedUntil = Clock.System.now() + reservationDuration,
-        )
-        replace(reserved)
-        return ActionResult.Success(reserved)
+        val occupied = spot.copy(status = SpotStatus.Occupied(licensePlate))
+        replace(occupied)
+        return ActionResult.Success(occupied)
     }
-
-    private fun replace(updated: ParkingSpot) {
-        _spots.value = _spots.value.map {
-            if (it.id == updated.id) updated else it
-        }
-    }
-
-    // like static final in Java
-    companion object {
-        val reservationDuration = 10.minutes
-    }
-
 
     @Synchronized
-    fun confirmArrival(id: Int, driver: String): ActionResult {
+    fun release(id: Int, licensePlate: String): ActionResult {
         val spot = find(id) ?: return ActionResult.NotFound(id)
-        return when {
-            spot.status != SpotStatus.RESERVED -> ActionResult.Conflict("Spot ${spot.label} is not reserved")
-            spot.reservedBy != driver -> ActionResult.Conflict("Spot is reserved by another driver")
-            else -> {
-                val occupied = spot.copy(status = SpotStatus.OCCUPIED, reservedUntil = null)
-                replace(occupied)
-                ActionResult.Success(occupied)
-            }
+        val status = spot.status
+        if (status !is SpotStatus.Occupied || status.licensePlate != licensePlate) {
+            return ActionResult.Conflict("Spot ${spot.label} is not occupied by $licensePlate")
         }
-    }
-
-
-    // Homework
-    /*
-    * The driver who reserved a spot can:
-    *   - confirm arrival (the spot becomes OCCUPIED) or
-    *   - cancel the reservation / leave the spot (the spot becomes FREE).
-    * Nobody else can do this.
-    * A reservation that is older than 10 minutes is canceled automatically.
-    */
-    @Synchronized
-    fun release(id: Int, driver: String): ActionResult {
-        val spot = find(id) ?: return ActionResult.NotFound(id)
-        if (spot.reservedBy != driver) {
-            return ActionResult.Conflict("Spot ${spot.label} is not held by $driver")
-        }
-        val free = spot.copy(status = SpotStatus.FREE, reservedBy = null, reservedUntil = null)
+        val free = spot.copy(status = SpotStatus.Free)
         replace(free)
         return ActionResult.Success(free)
     }
@@ -106,14 +61,12 @@ class ParkingRepository(initial: List<ParkingSpot>) {
     *
     * The sensors keep the occupancy between 20% and 70%:
     * when the lot is too empty, cars arrive; when it is too full, cars leave.
-    * The sensors never touch an unavailable spot, or a spot that is reserved or occupied by a driver of the app.
-    *
-    * A reservation that is older than 10 minutes is canceled automatically.
+    * The sensors never touch an unavailable spot, or a spot occupied by a driver of the app.
     * */
     @Synchronized
     fun simulateSensor() {
-        val usable = _spots.value.filter { it.status != SpotStatus.UNAVAILABLE }
-        val busy = usable.count { it.status != SpotStatus.FREE }
+        val usable = _spots.value.filter { it.status !is SpotStatus.Unavailable }
+        val busy = usable.count { it.status is SpotStatus.Occupied }
         val ratio = busy.toDouble() / usable.size
 
         val shouldOccupy = when {
@@ -123,26 +76,25 @@ class ParkingRepository(initial: List<ParkingSpot>) {
         }
         val candidate =
             if (shouldOccupy) {
-                usable.filter { it.status == SpotStatus.FREE }.randomOrNull()
+                usable.filter { it.status is SpotStatus.Free }.randomOrNull()
             } else {
-                usable.filter { it.status == SpotStatus.OCCUPIED && it.reservedBy == null }.randomOrNull()
+                usable.filter { it.isSimulatedCar() }.randomOrNull()
             }
         if (candidate != null) {
-            replace(
-                candidate.copy(
-                    status =
-                        if (shouldOccupy) SpotStatus.OCCUPIED else SpotStatus.FREE
-                )
-            )
+            val newStatus = if (shouldOccupy) SpotStatus.Occupied(randomSimulatedPlate()) else SpotStatus.Free
+            replace(candidate.copy(status = newStatus))
         }
     }
 
-    @Synchronized
-    fun releaseExpired(clock: Clock) {
-        for (spot in _spots.value.toList()) {
-            if (spot.status == SpotStatus.RESERVED && (spot.reservedUntil ?: Instant.DISTANT_FUTURE) < clock.now()) {
-                replace(spot.copy(status = SpotStatus.FREE, reservedBy = null, reservedUntil = null))
-            }
+    // the cars of the sensors have a plate like SIM-123, the drivers of the app never do
+    private fun ParkingSpot.isSimulatedCar(): Boolean {
+        val status = status
+        return status is SpotStatus.Occupied && status.licensePlate.startsWith(SIMULATED_PREFIX)
+    }
+
+    private fun replace(updated: ParkingSpot) {
+        _spots.value = _spots.value.map {
+            if (it.id == updated.id) updated else it
         }
     }
 }

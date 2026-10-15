@@ -1,6 +1,6 @@
 package com.v1.parkmini
 
-import com.v1.parkmini.models.ParkingSpot
+import com.v1.parkmini.shared.ParkingSpot
 
 // Every action on a spot ends in exactly one of these three outcomes.
 sealed interface ActionResult {

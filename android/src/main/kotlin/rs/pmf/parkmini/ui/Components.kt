@@ -26,24 +26,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import rs.pmf.parkmini.data.ParkingSpot
-import rs.pmf.parkmini.data.SpotStatus
-import rs.pmf.parkmini.data.Stats
+import com.v1.parkmini.shared.ParkingSpot
+import com.v1.parkmini.shared.SpotStatus
+import com.v1.parkmini.shared.Stats
+import com.v1.parkmini.shared.Zone
 
-// Task 7: the tile (typed). Task 8 adds onClick, Task 10 adds isMine and enabled.
+// Task 7: the tile (typed). Task 8 adds onClick, Task 10 adds isMine.
 @Composable
 fun SpotTile(
     spot: ParkingSpot,
     isMine: Boolean,
     onClick: () -> Unit,
-    enabled: Boolean = spot.status == SpotStatus.FREE || isMine,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = spot.status.color),
         border = if (isMine) BorderStroke(3.dp, Color.Black) else null,
         modifier = Modifier
             .aspectRatio(1f)
-            .clickable(enabled = enabled && spot.status != SpotStatus.UNAVAILABLE, onClick = onClick),
+            .clickable(enabled = spot.status is SpotStatus.Free || isMine, onClick = onClick),
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -56,9 +56,15 @@ fun SpotTile(
     }
 }
 
-// Task 8 | GIVEN (ready code) (isOffline is used in Task 9, driver in Task 10)
+// Task 10: does this spot hold my car?
+fun ParkingSpot.isOccupiedBy(licensePlate: String): Boolean {
+    val status = status
+    return licensePlate.isNotBlank() && status is SpotStatus.Occupied && status.licensePlate == licensePlate
+}
+
+// Task 8 | GIVEN (ready code) (isOffline is used in Task 9, licensePlate in Task 10)
 @Composable
-fun StatsHeader(stats: Stats, isOffline: Boolean, driver: String) {
+fun StatsHeader(stats: Stats, isOffline: Boolean, licensePlate: String) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Free: ${stats.free} / ${stats.total}", style = MaterialTheme.typography.headlineSmall)
@@ -66,7 +72,8 @@ fun StatsHeader(stats: Stats, isOffline: Boolean, driver: String) {
                 progress = { stats.occupancyPercent / 100f },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text("Occupancy: ${stats.occupancyPercent}%  •  You are: $driver", style = MaterialTheme.typography.bodySmall)
+            val you = if (licensePlate.isBlank()) "" else "  •  You: $licensePlate"
+            Text("Occupancy: ${stats.occupancyPercent}%$you", style = MaterialTheme.typography.bodySmall)
             if (isOffline) {
                 Text("No connection to the server, showing the last known state", color = MaterialTheme.colorScheme.error)
             }
@@ -77,14 +84,14 @@ fun StatsHeader(stats: Stats, isOffline: Boolean, driver: String) {
 
 @Composable
 private fun Legend() {
+    val items = listOf("Free" to FreeColor, "Occupied" to OccupiedColor, "Unavailable" to UnavailableColor)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        for (status in SpotStatus.entries) {
-            Box(Modifier.size(10.dp).background(status.color, CircleShape))
-            Text(status.title, fontSize = 11.sp)
+        for ((title, color) in items) {
+            Box(Modifier.size(10.dp).background(color, CircleShape))
+            Text(title, fontSize = 11.sp)
         }
     }
 }
-
 
 // Optional | GIVEN (ready code)
 // ---- Preview: see the component without running an emulator ----
@@ -93,10 +100,11 @@ private fun Legend() {
 @Composable
 private fun SpotTilePreview() {
     ParkMiniTheme {
+        val statuses = listOf(SpotStatus.Free, SpotStatus.Occupied("KG-123-AB"), SpotStatus.Unavailable)
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            for ((index, status) in SpotStatus.entries.withIndex()) {
+            for ((index, status) in statuses.withIndex()) {
                 Box(Modifier.size(96.dp)) {
-                    SpotTile(ParkingSpot(index, "A${index + 1}", "A", status), isMine = false, onClick = {})
+                    SpotTile(ParkingSpot(index, "A${index + 1}", Zone.A, status), isMine = false, onClick = {})
                 }
             }
         }

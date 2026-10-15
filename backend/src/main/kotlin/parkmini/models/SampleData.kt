@@ -1,7 +1,8 @@
 package com.v1.parkmini.models
 
-import com.v1.parkmini.models.enums.SpotStatus
-import com.v1.parkmini.models.enums.Zone
+import com.v1.parkmini.shared.ParkingSpot
+import com.v1.parkmini.shared.SpotStatus
+import com.v1.parkmini.shared.Zone
 import kotlin.random.Random
 
 /* Task 2:
@@ -18,9 +19,9 @@ fun sampleSpots(occupiedShare: Double = 0.0): List<ParkingSpot> {
     for (zone in Zone.entries) {
         for (num in 1..6) {
             val status = when {
-                zone == Zone.C && num == 6 -> SpotStatus.UNAVAILABLE
-                Random.nextDouble() < occupiedShare -> SpotStatus.OCCUPIED
-                else -> SpotStatus.FREE
+                zone == Zone.C && num == 6 -> SpotStatus.Unavailable
+                Random.nextDouble() < occupiedShare -> SpotStatus.Occupied(randomSimulatedPlate())
+                else -> SpotStatus.Free
             }
             spots.add(ParkingSpot(id, "$zone$num", zone, status))
             id++
@@ -29,28 +30,8 @@ fun sampleSpots(occupiedShare: Double = 0.0): List<ParkingSpot> {
     return spots
 }
 
-// If I have enough time show shuffle with take:
-fun sampleSpots2(occupiedShare: Double = 0.0): List<ParkingSpot> {
-    val spots = mutableListOf<ParkingSpot>()
-    var id = 1
-    for (zone in Zone.entries) {
-        for (num in 1..6) {
-            val status = if (zone == Zone.C && num == 6) SpotStatus.UNAVAILABLE
-            else SpotStatus.FREE
-            spots.add(ParkingSpot(id, "$zone$num", zone, status))
-            id++
-        }
-    }
-    // 1. candidates: spots that can become occupied (every one of them without C6)
-    val candidates = spots.filter { it.status == SpotStatus.FREE }
+// The cars that "arrive" in the simulation get a plate like SIM-123. A real driver cannot type it (see isValidLicensePlate),
+// so the sensors can tell their cars from the cars of the drivers who use the app.
+const val SIMULATED_PREFIX = "SIM-"
 
-    // 2. how many spots should be taken
-    val howMany = (spots.size * occupiedShare).toInt()
-
-    // 3. shuffle candidates and take first howMany
-    val chosen = candidates.shuffled().take(howMany)
-
-    // 4. we exchange chosen spots with occupied copies, the rest of them stay the same
-    return spots.map { if (it in chosen) it.copy(status = SpotStatus.OCCUPIED) else it }
-    return spots
-}
+fun randomSimulatedPlate(): String = "$SIMULATED_PREFIX${Random.nextInt(100, 1000)}"

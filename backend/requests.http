@@ -1,3 +1,10 @@
+### How to use this file:
+### 1. Run Application.kt. 2. Run request 8 first (WebSocket): it shows which spots are free ("type":"free") and their ids.
+### 3. Put the id of a free spot into @id below, then run the requests 1 to 7 in order.
+@id = 1
+@plate = KG-123-AB
+@otherPlate = KG-777-ZZ
+
 ### 1. Health check
 GET http://localhost:8080/
 
@@ -7,110 +14,80 @@ GET http://localhost:8080/
     });
 %}
 
-### 2. All spots
-GET http://localhost:8080/api/spots
-
-> {%
-    client.test("there are 18 spots", function () {
-        client.assert(response.status === 200, "expected 200 OK");
-        client.assert(response.body.length === 18, "expected 18 spots");
-    });
-    client.test("the last spot (C6) is unavailable", function () {
-        const last = response.body[response.body.length - 1];
-        client.assert(last.label === "C6" && last.status === "UNAVAILABLE", "C6 must be UNAVAILABLE");
-    });
-%}
-
-### 3. Free spots (remembers the id of the first one)
-GET http://localhost:8080/api/spots?status=free
-
-> {%
-    client.test("only FREE spots are returned", function () {
-        client.assert(response.body.every(s => s.status === "FREE"), "all spots must be FREE");
-    });
-    client.global.set("id", response.body[0].id);
-%}
-
-### 4. Statistics
-GET http://localhost:8080/api/spots/stats
-
-> {%
-    client.test("statistics add up", function () {
-        const s = response.body;
-        client.assert(s.total === 18, "total must be 18");
-        client.assert(s.unavailable === 1, "one spot is unavailable");
-        client.assert(s.free + s.reserved + s.occupied + s.unavailable === s.total, "numbers must add up");
-    });
-%}
-
-### 5. One spot
-GET http://localhost:8080/api/spots/5
-
-> {%
-    client.test("spot A5", function () {
-        client.assert(response.body.label === "A5", "expected A5");
-    });
-%}
-
-### 6. Unknown spot -> 404
-GET http://localhost:8080/api/spots/999
-
-> {%
-    client.test("unknown spot returns 404", function () {
-        client.assert(response.status === 404, "expected 404");
-    });
-%}
-
-### 7. Reserve the free spot (from request 3)
-POST http://localhost:8080/api/spots/{{id}}/reserve
+### 2. Park in the spot
+POST http://localhost:8080/api/spots/{{id}}/occupy
 Content-Type: application/json
 
-{ "driver": "ana" }
+{ "licensePlate": "{{plate}}" }
 
 > {%
-    client.test("the spot is reserved by ana", function () {
-        client.assert(response.status === 200, "expected 200 OK");
-        client.assert(response.body.status === "RESERVED", "expected RESERVED");
-        client.assert(response.body.reservedBy === "ana", "expected ana");
+    client.test("the spot is occupied by our plate", function () {
+        client.assert(response.status === 200, "expected 200 OK (if 409: the spot is not free, change @id)");
+        client.assert(response.body.status.type === "occupied", "expected occupied");
+        client.assert(response.body.status.licensePlate === "KG-123-AB", "expected our plate");
     });
 %}
 
-### 8. Another driver tries the same spot -> 409
-POST http://localhost:8080/api/spots/{{id}}/reserve
+### 3. Another driver tries the same spot -> 409
+POST http://localhost:8080/api/spots/{{id}}/occupy
 Content-Type: application/json
 
-{ "driver": "marko" }
+{ "licensePlate": "{{otherPlate}}" }
 
 > {%
-    client.test("a second reservation is rejected", function () {
+    client.test("a second driver is rejected", function () {
         client.assert(response.status === 409, "expected 409 Conflict");
     });
 %}
 
-### 9. Confirm arrival
-POST http://localhost:8080/api/spots/{{id}}/confirm
+### 4. An invalid license plate -> 400
+POST http://localhost:8080/api/spots/{{id}}/occupy
 Content-Type: application/json
 
-{ "driver": "ana" }
+{ "licensePlate": "abc" }
 
 > {%
-    client.test("the spot is occupied", function () {
-        client.assert(response.body.status === "OCCUPIED", "expected OCCUPIED");
+    client.test("an invalid plate is rejected", function () {
+        client.assert(response.status === 400, "expected 400 Bad Request");
     });
 %}
 
+### 5. An unknown spot -> 404
+POST http://localhost:8080/api/spots/999/occupy
+Content-Type: application/json
 
-### 10. Leave the spot
+{ "licensePlate": "{{plate}}" }
+
+> {%
+    client.test("an unknown spot returns 404", function () {
+        client.assert(response.status === 404, "expected 404");
+    });
+%}
+
+### 6. Leave with someone else's plate -> 409
 POST http://localhost:8080/api/spots/{{id}}/release
 Content-Type: application/json
 
-{ "driver": "ana" }
+{ "licensePlate": "{{otherPlate}}" }
 
 > {%
-    client.test("the spot is free again", function () {
-        client.assert(response.body.status === "FREE", "expected FREE");
+    client.test("only the car that is parked there can leave", function () {
+        client.assert(response.status === 409, "expected 409 Conflict");
     });
 %}
 
-### 11. Live updates (WebSocket)
+### 7. Leave the spot
+POST http://localhost:8080/api/spots/{{id}}/release
+Content-Type: application/json
+
+{ "licensePlate": "{{plate}}" }
+
+> {%
+    client.test("the spot is free again", function () {
+        client.assert(response.status === 200, "expected 200 OK");
+        client.assert(response.body.status.type === "free", "expected free");
+    });
+%}
+
+### 8. Live updates (WebSocket): the full list arrives at once, then after every change
 WEBSOCKET ws://localhost:8080/ws/spots

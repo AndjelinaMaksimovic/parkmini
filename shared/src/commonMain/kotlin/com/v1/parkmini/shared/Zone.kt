@@ -1,4 +1,4 @@
-package com.v1.parkmini.models.enums
+package com.v1.parkmini.shared
 
 import kotlinx.serialization.Serializable
 
