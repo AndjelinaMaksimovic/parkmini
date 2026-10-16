@@ -85,4 +85,4 @@ Server sluša na portu 8080. Prvi put firewall pita da li dozvoljavaš dolazne k
 | Emulator je spor ili ne radi | USB telefon; ili neka studenti gledaju tvoj ekran. |
 | Gradle JVM u IntelliJ-u pokazuje na pogrešan JDK | `Settings → Build Tools → Gradle → Gradle JVM`: JDK 17 ili noviji. |
 | Senzori menjaju mesto dok je dijalog otvoren | Rešeno: dijalog se zatvara ako mesto više nije slobodno. |
-| Emulator pokazuje ekran „Try out your stylus“ preko aplikacije | Sistemska funkcija emulatora, ne greška aplikacije: `adb shell settings put secure stylus_handwriting_enabled 0`. |
+| U emulatoru ne može da se kuca: umesto tastature se vidi uzana traka (mikrofon, brisanje, kvačica) ili ekran „Try out your stylus“ | Emulator prijavljuje miš kao olovku, pa Gboard ulazi u režim pisanja olovkom. To nije greška aplikacije. Isključi: u emulatoru otvori `Settings → System → Keyboard → On-screen keyboard → Gboard → Handwriting` (ili iz terminala `adb shell am start -n com.google.android.inputmethod.latin/com.google.android.apps.inputmethod.latin.stylus.StylusSettingsActivity`) i ugasi **Use stylus to write in text fields**. |
